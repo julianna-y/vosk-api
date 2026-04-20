@@ -2,15 +2,19 @@
 import queue
 import sys
 import json
+import time
 #library for listening to the microphone
 import sounddevice as sd
 #Import the offline model and the offline recognizer from VOSK library
 from vosk import Model, KaldiRecognizer
 
-from camera import Camera
+from camera_operator import Camera_Operator
 ##
-# create new camera object
-my_camera = Camera()
+# create new camera_operator object
+camera_op = Camera_Operator()
+
+# set max time length of recordings
+max_recording_time = 10
 
 '''This script processes audio input from the microphone and displays the transcribed text.'''
 
@@ -51,6 +55,11 @@ try:
         while True:
             # get the next audio block from the queue
             data = q.get()
+            
+            if camera_op.is_recording:
+                if (time.time() - camera_op.time_rec) >= (max_recording_time + 1):
+                    print("time's up!", str(camera_op.time_rec))
+                    camera_op.stop_video()
 
             # recognize the speech in the audio block
             # condition is true if model detects a pause after a speech fragment
@@ -67,8 +76,8 @@ try:
 
                     print(recognizerResult) # print command
 
-                    # send detected command to the camera object, to execute the command
-                    my_camera.do_command(resultDict.get("text", ""))
+                    # send detected command to the camera_op object, to execute the command
+                    camera_op.do_command(resultDict.get("text", ""))
 
                 # otherwise, inform user that no input sound was detected
                 else:
@@ -80,3 +89,4 @@ except KeyboardInterrupt:
 
 except Exception as e:
     print(str(e)) # print error message
+   
